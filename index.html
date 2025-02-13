@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Empleados</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .empleado-card {
+            border: 1px solid #971b1b;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 8px 0;
+            box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.1);
+        }
+        .empleado-title {
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+        .empleado-desc {
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+    <h1>Consulta Siesa</h1>
+
+    <!-- Campo de búsqueda -->
+    <input type="text" id="descripcion-input" placeholder="Ingrese la descripción">
+    <button onclick="loadEmpleados()">Buscar</button>
+
+    <div id="empleados-container">
+        <!-- Aquí se cargarán los datos dinámicamente -->
+    </div>
+
+    <script>
+        // Función para cargar empleados con filtro opcional
+        async function loadEmpleados() {
+            try {
+                const descripcion = document.getElementById('descripcion-input').value.trim();
+                const empleadosContainer = document.getElementById('empleados-container');
+    
+                // Si el input está vacío, no hacer nada
+                if (!descripcion) {
+                    empleadosContainer.innerHTML = '<p>Ingrese una descripción para buscar</p>';
+                    return;
+                }
+    
+                let url = `/empleados?descripcion=${encodeURIComponent(descripcion)}`;
+                const response = await fetch(url); 
+                const data = await response.json();
+    
+                // Limpiamos el contenedor
+                empleadosContainer.innerHTML = '';
+    
+                if (data.empleados.length === 0) {
+                    empleadosContainer.innerHTML = '<p>No se encontraron resultados</p>';
+                    return;
+                }
+    
+                // Iteramos sobre los empleados y creamos elementos HTML
+                data.empleados.forEach(empleado => {
+                    const card = document.createElement('div');
+                    card.classList.add('empleado-card');
+    
+                    card.innerHTML = `
+                        <div class="empleado-title">${empleado.f281_descripcion}</div>
+                        <div class="empleado-desc">ID Merkahorro: ${empleado.f281_id_cia}</div>
+                        <div class="empleado-desc">ID Unidad: ${empleado.f281_id}</div>
+                        <div class="empleado-desc">Fecha: ${empleado.f281_ts}</div>
+                    `;
+    
+                    empleadosContainer.appendChild(card);
+                });
+            } catch (error) {
+                console.error('Error al cargar los empleados:', error);
+            }
+        }
+    </script>
+</body>
+</html>
+
+</body>
+</html>
