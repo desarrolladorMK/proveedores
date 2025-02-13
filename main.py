@@ -51,6 +51,7 @@ def fetch_rows_as_dict(cursor):
     return [dict(zip(columns, row)) for row in cursor.fetchall()]
 
 @app.get("/empleados")
+
 def get_empleados(descripcion: str = Query(None)):
     conn = get_db_connection()
     cursor = conn.cursor()
