@@ -50,20 +50,38 @@ def fetch_rows_as_dict(cursor):
     columns = [column[0] for column in cursor.description]
     return [dict(zip(columns, row)) for row in cursor.fetchall()]
 
-@app.get("/empleados")
-
-def get_empleados(descripcion: str = Query(None)):
+@app.get("/documentos")
+def get_documentos():
+    """
+    Endpoint para obtener TODOS los documentos sin filtros.
+    """
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    if descripcion:
-        query = """SELECT [f281_id_cia], [f281_id], [f281_descripcion], [f281_ts] 
-                   FROM [UnoEE_Merkahorro_Real].[dbo].[t281_co_unidades_negocio] 
-                   WHERE f281_descripcion LIKE ?"""
-        cursor.execute(query, ('%' + descripcion + '%',))
-    else:
-        cursor.execute("SELECT [f281_id_cia], [f281_id], [f281_descripcion], [f281_ts] FROM [UnoEE_Merkahorro_Real].[dbo].[t281_co_unidades_negocio]")
+    query = """SELECT TOP (1115) 
+         
+           t1.*, 
+        t2.f_telefono,
+        t2.f_municipio_desc,
+        t2.f_direccion,
+		t2.f_email,
+        t3.f350_fecha,
+        t3.f350_total_db,
+        t3.f350_usuario_creacion
+    FROM [UnoEE_Merkahorro_Real].[dbo].[BI_T363] t1
+    LEFT JOIN [UnoEE_Merkahorro_Real].[dbo].[SE_T200] t2 
+        ON t1.f_beneficiario = t2.f_tercero
+    LEFT JOIN [UnoEE_Merkahorro_Real].[dbo].[t350_co_docto_contable] t3
+        ON t1.f_perido = t3.f350_id_periodo
+        WHERE t1.f_docto_egreso = '001-FCE-00101229'
+		AND t3.f350_fecha = '2025/02/28'
+		AND t3.f350_total_db = 100
 
+"""
+
+    cursor.execute(query)
+    
     rows = fetch_rows_as_dict(cursor)
     conn.close()
-    return {"empleados": rows}
+    
+    return {"documentos": rows}
