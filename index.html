@@ -1,197 +1,152 @@
 <!DOCTYPE html>
 <html lang="es">
-  <head>
+<head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Comprobante de Egreso</title>
     <style>
-      body {
-        font-family: Arial, sans-serif;
-        margin: 20px;
-        text-align: center;
-      }
-
-      h1,
-      h2 {
-        color: #971b1b;
-        margin-bottom: 5px;
-      }
-
-      h2 {
-        font-size: 18px;
-        margin-top: 0;
-      }
-
-      .factura-container {
-        border: 2px solid #971b1b;
-        padding: 20px;
-        max-width: 800px;
-        margin: auto;
-        background-color: #fff;
-        text-align: left;
-      }
-
-      .info-header {
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 10px;
-      }
-
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 10px;
-      }
-
-      th,
-      td {
-        border: 1px solid #ddd;
-        padding: 8px;
-        text-align: left;
-      }
-
-      th {
-        background-color: #971b1b;
-        color: white;
-      }
-
-      tr:nth-child(even) {
-        background-color: #f2f2f2;
-      }
-
-      tr:hover {
-        background-color: #ddd;
-      }
-
-      .loading {
-        font-weight: bold;
-        color: #971b1b;
-      }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            text-align: center;
+        }
+        h1, h2 {
+            color: #971b1b;
+            margin-bottom: 5px;
+        }
+        .factura-container {
+            border: 2px solid #971b1b;
+            padding: 20px;
+            max-width: 800px;
+            margin: auto;
+            background-color: #fff;
+            text-align: left;
+        }
+        .info-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .loading {
+            font-weight: bold;
+            color: #971b1b;
+        }
+        #search-container {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        input, button {
+            padding: 10px;
+            font-size: 16px;
+            margin: 5px;
+        }
     </style>
-  </head>
+</head>
+<body>
 
-  <body>
     <div class="factura-container">
-      <h1>Comprobante de Egreso</h1>
-      <h2>Supermercado Merkahorro S.A.S.</h2>
-      <h2>NIT: 901150440-9</h2>
+        <h1>Comprobante de Egreso</h1>
+        <h2>Supermercado Merkahorro S.A.S.</h2>
+        <h2>NIT: 901150440-9</h2>
 
-      <div id="factura-info">
-        <p id="status-message"></p>
-      </div>
+        <div id="search-container">
+            <input type="text" id="terceroId" placeholder="Ingrese ID del tercero" />
+            <button onclick="loadFactura()">Buscar</button>
+        </div>
 
-      <div id="documentos-container">
-        <!-- Aquí se cargará la factura dinámicamente -->
-      </div>
+        <div id="factura-info">
+            <p id="status-message"></p>
+        </div>
+
+        <div id="documentos-container">
+            <!-- Aquí se cargará la factura dinámicamente -->
+        </div>
     </div>
 
     <script>
-      async function loadFactura() {
-        try {
-          const documentosContainer = document.getElementById(
-            "documentos-container"
-          );
-          const statusMessage = document.getElementById("status-message");
-
-          // Mostrar mensaje de carga
-          statusMessage.innerHTML =
-            '<p class="loading">Cargando comprobante...</p>';
-          documentosContainer.innerHTML = "";
-
-          const response = await fetch("/documentos");
-          const data = await response.json();
-
-          if (data.documentos.length === 0) {
-            statusMessage.innerHTML = "<p>No se encontraron documentos</p>";
-            return;
-          }
-
-          // Tomar el primer documento (asumiendo que es un comprobante a la vez)
-          const documento = data.documentos[0];
-
-          //DOCUMETO DE EGRESO
-          const crucePago = data.documentos
-  .map((d) => d.f_docto_sa)
-  .filter(Boolean)
-  .join(" / ");
-
-const valorBruto = data.documentos
-  .map((d) => d.f_vlr_bruto)
-  .filter(Boolean)
-  .join(" / ");
-
-const iva = data.documentos
-  .map((d) => d.f_iva)
-  .filter(Boolean)
-  .join(" / ");
-
-  const reteIva = data.documentos
-  .map((d) => (d.f_vlr_cxp_alt !== null && d.f_vlr_cxp_alt !== undefined ? d.f_vlr_cxp_alt : "0,00"))
-  .join(" / ");
-
-const reteIca = data.documentos
-  .map((d) => (d.f_descuento_pp !== null && d.f_descuento_pp !== undefined ? d.f_descuento_pp : "0,00"))
-  .join(" / ");
-
-const reteFuente = data.documentos
-  .map((d) => (d.f_valor_ret !== null && d.f_valor_ret !== undefined ? d.f_valor_ret : "0,00"))
-  .join(" / ");
-
-
-const valorPagado = data.documentos
-  .map((d) => d.f_vlr_cxp)
-  .filter(Boolean)
-  .join(" / ");
-          
-          // Información principal de la factura
-          let facturaInfo = `
-    <div class="info-header">
-        <p><strong>Numero:</strong> ${documento.f_docto_egreso}</p>
-        <p><strong>Fecha:</strong> ${documento.f350_fecha}</p>
-    </div>
-    <p><strong>Tercero:</strong> ${documento.f_razon}</p>
-    <p><strong>Direccion:</strong> ${documento.f_direccion}</p>
-    <p><strong>Telefono:</strong> ${documento.f_telefono}</p>
-    <p><strong>Banco:</strong> ${[documento.f_id_banco, documento.f_desc_banco]
-      .filter(Boolean)
-      .join(" - ")}</p>
-    <p><strong>Cuidad:</strong> ${documento.f_municipio_desc}</p>
-    <p><strong>Email:</strong> ${documento.f_email}</p>
-    <p><strong>Cuenta Corriente No:</strong> ${[documento.f_tipo_cta, documento.f_dato_cuenta]
-      .filter(Boolean)
-      .join(" - ")}</p>
-    <p><strong>Codigo Banco :</strong> ${documento.f_id_banco}</p>
-    <p><strong>Cuenta Bancaria :</strong> ${documento.f_desccta}</p>
-    <p><strong>Valor Consignado:</strong> ${documento.f350_total_db}</p>
-    <p><strong>Notas:</strong> ${documento.f_notas}</p>
-    <p><strong>D.CRUCE/M.PAGO:</strong> ${crucePago}</p>
-    <p><strong>VALOR BRUTO:</strong> ${valorBruto}</p>
-    <p><strong>IVA:</strong> ${iva}</p>
-    <p><strong>RETE IVA:</strong> ${reteIva}</p>
-    <p><strong>RETE ICA:</strong> ${reteIca}</p>
-    <p><strong>RETE FUENTE:</strong> ${reteFuente}</p>
-    <p><strong>VALOR PAGADO:</strong> ${valorPagado}</p>
-    <p><strong>Preparado Por :</strong> ${documento.f350_usuario_creacion}</p>
-`;
-
-
-          // Tabla con los detalles
-          let table = `
-                   
+        async function loadFactura() {
+            try {
+                const documentosContainer = document.getElementById("documentos-container");
+                const statusMessage = document.getElementById("status-message");
+                const terceroId = document.getElementById("terceroId").value.trim();
+    
+                // Validar que el ID solo contenga números y no esté vacío
+                if (terceroId && !/^\d+$/.test(terceroId)) {
+                    statusMessage.innerHTML = '<p style="color: red;">El NIT debe ser un número válido</p>';
+                    return;
+                }
+    
+                statusMessage.innerHTML = '<p class="loading">Cargando comprobante...</p>';
+                documentosContainer.innerHTML = "";
+    
+                // Construir la URL con parámetros
+                let url = `http://localhost:8000/documentos?limit=10`;
+                if (terceroId) {
+                    url += `&f_tercero_id=${encodeURIComponent(terceroId)}`;
+                }
+    
+                // Realizar la solicitud a la API
+                const response = await fetch(url);
+    
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Error ${response.status}: ${errorText}`);
+                }
+    
+                // Aquí se define `data` después de recibir la respuesta
+                const data = await response.json();
+    
+                // Si no hay documentos, mostrar mensaje
+                if (!data.documentos || data.documentos.length === 0) {
+                    statusMessage.innerHTML = "<p>No se encontraron documentos</p>";
+                    return;
+                }
+    
+                const documento = data.documentos[0];
+    
+                //DOCUMETO DE EGRESO
+                const crucePago = data.documentos.map((d) => d.f_docto_sa).filter(Boolean).join(" / ");
+                const valorBruto = data.documentos.map((d) => d.f_vlr_bruto).filter(Boolean).join(" / ");
+                const iva = data.documentos.map((d) => d.f_iva).filter(Boolean).join(" / ");
+                const reteIva = data.documentos.map((d) => d.f_vlr_cxp_alt ?? "0,00").join(" / ");
+                const reteIca = data.documentos.map((d) => d.f_descuento_pp ?? "0,00").join(" / ");
+                const reteFuente = data.documentos.map((d) => d.f_valor_ret ?? "0,00").join(" / ");
+                const valorPagado = data.documentos.map((d) => d.f_vlr_cxp).filter(Boolean).join(" / ");
+    
+                // Mostrar datos con valores por defecto si están vacíos
+                let facturaInfo = `
+                    <div class="info-header">
+                        <p><strong>Número:</strong> ${documento.f_docto_egreso || 'No disponible'}</p>
+                    </div>
+                    <p><strong>Fecha:</strong> ${documento.f_fecha_docto_egreso || 'No disponible'}</p>
+                    <p><strong>Tercero:</strong> ${documento.f_razon || 'No disponible'}</p>
+                    <p><strong>Dirección:</strong> ${documento.f_direccion || 'No disponible'}</p>
+                    <p><strong>Teléfono:</strong> ${documento.f_telefono || 'No disponible'}</p>
+                    <p><strong>Banco:</strong> ${(documento.f_id_banco || documento.f_desc_banco) ? [documento.f_id_banco, documento.f_desc_banco].filter(Boolean).join(" - ") : 'No disponible'}</p>
+                    <p><strong>Ciudad:</strong> ${documento.f_municipio_desc || 'No disponible'}</p>
+                    <p><strong>Email:</strong> ${documento.f_email || 'No disponible'}</p>
+                    <p><strong>Cuenta: Corriente No:</strong> ${documento.f_tipo || documento.f_numero_cta}</p>
+                    <p><strong>Código Banco:</strong> ${documento.f_id_banco || 'No disponible'}</p>
+                    <p><strong>Cuenta Bancaria:</strong> ${documento.f_desccta || 'No disponible'}</p>
+                    <p><strong>Valor Consignado:</strong> ${documento.f_valor_docto || 'No disponible'}</p>
+                    <p><strong>CRUCE:</strong> ${documento.f_concepto || 'No disponible'}</p>
+                    <p><strong>D.CRUCE/M.PAGO:</strong> ${crucePago}</p>
+                    <p><strong>VALOR BRUTO:</strong> ${valorBruto}</p>
+                    <p><strong>IVA:</strong> ${iva}</p>
+                    <p><strong>RETE IVA:</strong> ${reteIva}</p>
+                    <p><strong>RETE ICA:</strong> ${reteIca}</p>
+                    <p><strong>RETE FUENTE:</strong> ${reteFuente}</p>
+                    <p><strong>VALOR PAGADO:</strong> ${valorPagado}</p>
                 `;
-
-          // Insertar la información en la página
-          documentosContainer.innerHTML = facturaInfo + table;
-          statusMessage.innerHTML = `<p>Se ha generado el comprobante de egreso.</p>`;
-        } catch (error) {
-          console.error("Error al cargar el comprobante:", error);
-          statusMessage.innerHTML =
-            '<p style="color: red;">Error al obtener los datos.</p>';
+    
+                documentosContainer.innerHTML = facturaInfo;
+                statusMessage.innerHTML = `<p>Se ha generado el comprobante de egreso.</p>`;
+    
+            } catch (error) {
+                console.error("Error al cargar el comprobante:", error);
+                document.getElementById("status-message").innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+            }
         }
-      }
-
-      // Cargar factura automáticamente al abrir la página
-      window.onload = loadFactura;
     </script>
-  </body>
+</body>
 </html>
