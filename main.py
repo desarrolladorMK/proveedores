@@ -9,7 +9,7 @@ app = FastAPI()
 # 🔹 Conexión a la base de datos
 conn_str = (
     r'DRIVER={ODBC Driver 17 for SQL Server};'
-    r'SERVER=db02.siesacloud.local;'  
+    r'SERVER=siesa-pdn-sqlsw-db2.cw4fp6bllyds.us-east-1.rds.amazonaws.com;'  
     r'DATABASE=UnoEE_Merkahorro_Real;'  
     r'UID=merkahorroapp;'  
     r'PWD=Merkahorro$21$%;'  

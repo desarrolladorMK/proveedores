@@ -4,73 +4,188 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Comprobante de Egreso</title>
+  <!-- Incluimos jsPDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <!-- Incluimos html2canvas, necesario para doc.html() -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <style>
+    :root {
+      --primary-color: #2c3e50;
+      --secondary-color: #3498db;
+      --background-color: #ecf0f1;
+      --text-color: #333;
+      --border-color: #ddd;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
     body {
-      font-family: Arial, sans-serif;
-      margin: 20px;
-      text-align: center;
-      background-color: #f5f5f5;
-    }
-    .factura-container {
-      border: 2px solid black;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      line-height: 1.6;
+      background-color: var(--background-color);
+      color: var(--text-color);
       padding: 20px;
-      max-width: 900px;
-      margin: auto;
-      background-color: white;
-      text-align: left;
     }
+
+    .factura-container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      padding: 25px;
+      overflow: hidden;
+    }
+
     .header {
       text-align: center;
-      margin-bottom: 10px;
+      padding-bottom: 20px;
+      border-bottom: 2px solid var(--primary-color);
+      margin-bottom: 20px;
     }
+
+    .header h2 {
+      color: var(--primary-color);
+      font-size: 24px;
+      margin-bottom: 5px;
+    }
+
+    .header h3 {
+      color: #666;
+      font-size: 16px;
+      font-weight: 500;
+    }
+
+    #search-container {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 25px;
+      flex-wrap: wrap;
+    }
+
+    input, select, button {
+      padding: 10px 15px;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      font-size: 14px;
+      transition: all 0.3s ease;
+    }
+
+    input:focus, select:focus {
+      outline: none;
+      border-color: var(--secondary-color);
+      box-shadow: 0 0 5px rgba(52, 152, 219, 0.3);
+    }
+
+    #button-pdf {
+      background-color: var(--secondary-color);
+      color: white;
+      border: none;
+      cursor: pointer;
+      padding: 10px 20px;
+      margin-top: 10px;
+      transform: translate(631px, 1px);
+    }
+
+    button {
+      background-color: var(--secondary-color);
+      color: white;
+      border: none;
+      cursor: pointer;
+      padding: 10px 20px;
+    }
+    button:hover {
+      background-color: #2980b9;
+    }
+
+    
+
     .info-table, .details-table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 10px;
+      margin: 20px 0;
+      font-size: 14px;
     }
+
     th, td {
-      border: 1px solid black;
-      padding: 8px;
+      padding: 12px;
+      border: 1px solid var(--border-color);
+    }
+
+    th {
+      background-color: var(--primary-color);
+      color: white;
+      font-weight: 600;
       text-align: left;
     }
-    th {
-      background-color: white;
-      font-weight: bold;
+
+    tr:nth-child(even) {
+      background-color: #f8f9fa;
     }
+
     .bold-text {
-      font-weight: bold;
+      font-weight: 600;
+      color: var(--primary-color);
     }
-    #search-container {
-      margin-bottom: 20px;
-      text-align: center;
-    }
-    input, select, button {
-      padding: 10px;
-      font-size: 16px;
-      margin: 5px;
-    }
-    /* Estilos para el spinner */
+
     .spinner {
-      display: none; /* Oculto por defecto */
+      display: none;
       width: 40px;
       height: 40px;
       border: 4px solid #f3f3f3;
-      border-top: 4px solid #3498db;
+      border-top: 4px solid var(--secondary-color);
       border-radius: 50%;
       animation: spin 1s linear infinite;
       margin: 20px auto;
     }
+
     @keyframes spin {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
+
     #status-message {
-      min-height: 20px; /* Evita que el layout salte */
+      min-height: 20px;
+      text-align: center;
+      padding: 10px;
+      font-style: italic;
+    }
+
+    .header-factura {
+      background-color: #f8f9fa;
+      padding: 15px;
+      border-radius: 4px;
+      margin: 20px 0 10px;
+    }
+
+    .header-factura p {
+      margin: 5px 0;
+    }
+
+    hr {
+      border: 0;
+      border-top: 1px solid var(--border-color);
+      margin: 20px 0;
+    }
+
+    @media (max-width: 600px) {
+      .factura-container {
+        padding: 15px;
+      }
+      
+      #search-container {
+        flex-direction: column;
+        align-items: center;
+      }
     }
   </style>
 </head>
 <body>
-
   <div class="factura-container">
     <div class="header">
       <h2>Comprobante de Egreso</h2>
@@ -81,7 +196,7 @@
     <div id="search-container">
       <input type="text" id="terceroId" placeholder="Ingrese ID del tercero" />
       <button onclick="buscarFechas()">Buscar Fechas</button>
-      <select id="fechaSelect" style="display:none;" onchange="loadFactura()">
+      <select id="fechaSelect" style="display:none;">
         <option value="">Seleccione una fecha</option>
       </select>
     </div>
@@ -95,29 +210,18 @@
   </div>
 
   <script>
-    // Función para validar que un valor exista, sino retorna un mensaje por defecto.
+    // Funciones definidas en el ámbito global
     function safeValue(value) {
       return (value === null || value === undefined || value === "") ? "No se encontraron datos" : value;
     }
 
-    // Función para formatear números o mostrar mensaje si es nulo/indefinido.
     function safeNumber(value) {
       return (value === null || value === undefined) ? "No se encontraron datos" : formatNumber(value);
     }
 
-    // Formatear números a moneda COP.
     function formatNumber(value) {
       return new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", minimumFractionDigits: 2 }).format(value);
     }
-
-    // Al cargar la página, se recupera el ID guardado y se busca automáticamente.
-    document.addEventListener('DOMContentLoaded', () => {
-      const terceroId = localStorage.getItem('terceroId');
-      if (terceroId) {
-        document.getElementById("terceroId").value = terceroId;
-        buscarFechas();
-      }
-    });
 
     async function buscarFechas() {
       try {
@@ -130,7 +234,6 @@
           return;
         }
 
-        // Mostrar spinner y ocultar mensaje de estado
         spinner.style.display = "block";
         document.getElementById("status-message").innerHTML = "";
 
@@ -152,11 +255,11 @@
         });
 
         fechaSelect.style.display = "block";
-        spinner.style.display = "none"; // Ocultar spinner al finalizar
+        spinner.style.display = "none";
       } catch (error) {
         console.error("Error al obtener fechas:", error);
         alert("Error al obtener las fechas disponibles");
-        spinner.style.display = "none"; // Ocultar spinner en caso de error
+        document.getElementById("loading-spinner").style.display = "none";
       }
     }
 
@@ -168,17 +271,13 @@
         const terceroId = document.getElementById("terceroId").value.trim();
         const fecha = document.getElementById("fechaSelect").value.trim();
 
-        if (!terceroId || !fecha) {
-          return;
-        }
+        if (!terceroId || !fecha) return;
 
-        // Mostrar spinner y limpiar mensaje
         spinner.style.display = "block";
         statusMessage.innerHTML = "";
         documentosContainer.innerHTML = "";
 
         let url = `http://localhost:8000/documentos?f_tercero_id=${encodeURIComponent(terceroId)}&fecha=${encodeURIComponent(fecha)}`;
-
         const response = await fetch(url);
         if (!response.ok) throw new Error(`Error ${response.status}: ${await response.text()}`);
 
@@ -192,20 +291,19 @@
         let facturaHTML = "";
         let documentosAgrupados = {};
 
-        // Agrupar por número de comprobante de egreso
         data.documentos.forEach((factura) => {
           let valores = factura.Valores || {};
           let numeroComprobante = safeValue(factura.Número);
 
           if (!documentosAgrupados[numeroComprobante]) {
             documentosAgrupados[numeroComprobante] = {
+              base: factura,
               detalles: [],
               totalValorBruto: 0,
               totalIVA: 0,
               totalReteIVA: 0,
               totalReteICA: 0,
               totalReteFuente: 0,
-              valorConsignado: factura["Valor Consignado"]
             };
           }
 
@@ -226,33 +324,35 @@
           documentosAgrupados[numeroComprobante].totalReteFuente += parseFloat(valores["Rete Fuente"]) || 0;
         });
 
-        // Renderizar cada grupo de comprobantes
         Object.keys(documentosAgrupados).forEach(numeroComprobante => {
-          let factura = documentosAgrupados[numeroComprobante];
+          let grupo = documentosAgrupados[numeroComprobante];
+          let base = grupo.base;
+
           facturaHTML += `
-            <div class="factura-container">
+            <div class="factura-container" id="factura-${numeroComprobante}">
               <div class="header-factura">
                 <p><strong>Número:</strong> ${numeroComprobante}</p>
                 <p><strong>Fecha:</strong> ${safeValue(fecha)}</p>
+                <button id="button-pdf" onclick="descargarPDF('${numeroComprobante}')">Descargar PDF</button>
               </div>
               <table class="info-table">
                 <tr>
                   <td class="bold-text">Tercero:</td>
-                  <td>${safeValue(data.documentos[0].Proveedor)}</td>
+                  <td>${safeValue(base.Proveedor)}</td>
                   <td class="bold-text">Ciudad:</td>
-                  <td>${safeValue(data.documentos[0].Ciudad)}</td>
+                  <td>${safeValue(base.Ciudad)}</td>
                 </tr>
                 <tr>
                   <td class="bold-text">Dirección:</td>
-                  <td>${safeValue(data.documentos[0].Dirección)}</td>
+                  <td>${safeValue(base.Dirección)}</td>
                   <td class="bold-text">Teléfono:</td>
-                  <td>${safeValue(data.documentos[0].Teléfono)}</td>
+                  <td>${safeValue(base.Teléfono)}</td>
                 </tr>
                 <tr>
                   <td class="bold-text">Email:</td>
-                  <td>${safeValue(data.documentos[0].Email)}</td>
+                  <td>${safeValue(base.Email)}</td>
                   <td class="bold-text">Banco:</td>
-                  <td>${safeValue(data.documentos[0].Banco)}</td>
+                  <td>${safeValue(base.Banco)}</td>
                 </tr>
               </table>
               <table class="info-table">
@@ -263,10 +363,10 @@
                   <td class="bold-text">Valor Consignado</td>
                 </tr>
                 <tr>
-                  <td>${safeValue(data.documentos[0]["Código Banco"])}</td>
-                  <td>${safeValue(data.documentos[0]["Cuenta Bancaria"])}</td>
-                  <td>${safeValue(data.documentos[0]["Cuenta Corriente"])}</td>
-                  <td>${safeNumber(data.documentos[0]["Valor Consignado"])}</td>
+                  <td>${safeValue(base["Código Banco"])}</td>
+                  <td>${safeValue(base["Cuenta Bancaria"])}</td>
+                  <td>${safeValue(base["Cuenta Corriente"])}</td>
+                  <td>${safeNumber(base["Valor Consignado"])}</td>
                 </tr>
               </table>
               <table class="details-table">
@@ -280,7 +380,7 @@
                   <th>Valor Pagado</th>
                 </tr>
           `;
-          factura.detalles.forEach(detalle => {
+          grupo.detalles.forEach(detalle => {
             facturaHTML += `
               <tr>
                 <td>${detalle.dCruce}</td>
@@ -297,27 +397,89 @@
           facturaHTML += `
               <tr style="font-weight: bold; background-color: #f2f2f2;">
                 <td><strong>TOTAL</strong></td>
-                <td>${safeNumber(factura.totalValorBruto)}</td>
-                <td>${safeNumber(factura.totalIVA)}</td>
-                <td>${safeNumber(factura.totalReteIVA)}</td>
-                <td>${safeNumber(factura.totalReteICA)}</td>
-                <td>${safeNumber(factura.totalReteFuente)}</td>
-                <td>${safeNumber(factura.valorConsignado)}</td>
+                <td>${safeNumber(grupo.totalValorBruto)}</td>
+                <td>${safeNumber(grupo.totalIVA)}</td>
+                <td>${safeNumber(grupo.totalReteIVA)}</td>
+                <td>${safeNumber(grupo.totalReteICA)}</td>
+                <td>${safeNumber(grupo.totalReteFuente)}</td>
+                <td>${safeNumber(base["Valor Consignado"])}</td>
               </tr>
-            `;
-          facturaHTML += `</table></div><hr/>`;
+            </table>
+            </div><hr/>`;
         });
 
         documentosContainer.innerHTML = facturaHTML;
         statusMessage.innerHTML = `<p>Se han cargado ${Object.keys(documentosAgrupados).length} comprobantes de egreso.</p>`;
-        spinner.style.display = "none"; // Ocultar spinner al finalizar
+        spinner.style.display = "none";
       } catch (error) {
         console.error("Error al cargar el comprobante:", error);
-        statusMessage.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
-        spinner.style.display = "none"; // Ocultar spinner en caso de error
+        document.getElementById("status-message").innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+        document.getElementById("loading-spinner").style.display = "none";
       }
     }
-  </script>
 
+    function descargarPDF(numeroComprobante) {
+      if (!window.jspdf || !window.jspdf.jsPDF) {
+        console.error('jsPDF no se cargó correctamente');
+        alert('Error: No se pudo cargar la librería jsPDF');
+        return;
+      }
+      if (typeof html2canvas === 'undefined') {
+        console.error('html2canvas no se cargó correctamente');
+        alert('Error: No se pudo cargar la librería html2canvas');
+        return;
+      }
+
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      const facturaElement = document.querySelector(`#factura-${numeroComprobante}`);
+      if (!facturaElement) {
+        alert('No se encontró el comprobante para descargar');
+        return;
+      }
+
+      doc.setFont("helvetica");
+      doc.setFontSize(12);
+
+      let y = 10;
+      const margin = 10;
+      const pageWidth = doc.internal.pageSize.getWidth();
+
+      doc.setFontSize(16);
+      doc.text("Comprobante de Egreso", pageWidth / 2, y, { align: "center" });
+      doc.setFontSize(12);
+      y += 10;
+      doc.text("Supermercado Merkahorro S.A.S.", pageWidth / 2, y, { align: "center" });
+      y += 7;
+      doc.text("NIT: 901150440-9", pageWidth / 2, y, { align: "center" });
+      y += 15;
+
+      doc.html(facturaElement, {
+        callback: function (doc) {
+          doc.save(`Comprobante_${numeroComprobante}.pdf`);
+        },
+        x: margin,
+        y: y,
+        width: pageWidth - 2 * margin,
+        windowWidth: 900
+      });
+    }
+
+    // Configuración inicial al cargar la página
+    document.addEventListener('DOMContentLoaded', () => {
+      const terceroId = localStorage.getItem('terceroId');
+      if (terceroId) {
+        document.getElementById("terceroId").value = terceroId;
+        buscarFechas();
+      }
+
+      document.getElementById("fechaSelect").addEventListener('change', loadFactura);
+    });
+  </script>
 </body>
 </html>

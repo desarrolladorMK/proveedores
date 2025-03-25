@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comprobante FND</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            text-align: center;
+            background-color: #f5f5f5;
+        }
+        .comprobante-container {
+            border: 2px solid black;
+            padding: 20px;
+            max-width: 900px;
+            margin: auto;
+            background-color: white;
+            text-align: left;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .info-table, .details-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            border: 1px solid black;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: white;
+            font-weight: bold;
+            text-align: center;
+        }
+        .bold-text {
+            font-weight: bold;
+        }
+        .right-align {
+            text-align: right;
+        }
+        .total-row {
+            font-weight: bold;
+            background-color: #f2f2f2;
+        }
+        #search-container {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        input, select, button {
+            padding: 10px;
+            font-size: 16px;
+            margin: 5px;
+        }
+        .spinner {
+            display: none;
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        #status-message {
+            min-height: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="comprobante-container">
+        <div class="header">
+            <h2>Comprobante FND</h2>
+            <h3>Supermercado Merkahorro S.A.S.</h3>
+            <h3>NIT: 901150440-9</h3>
+        </div>
+
+        <div id="search-container">
+            <input type="text" id="terceroId" placeholder="Ingrese ID del tercero (NIT)" />
+            <button onclick="buscarFechasFND()">Buscar Fechas</button>
+            <select id="fechaSelect" style="display:none;" onchange="loadDocumentoFND()">
+                <option value="">Seleccione una fecha</option>
+            </select>
+        </div>
+
+        <div id="comprobante-info">
+            <p id="status-message"></p>
+            <div id="loading-spinner" class="spinner"></div>
+        </div>
+
+        <div id="documentos-container"></div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const terceroId = localStorage.getItem('terceroId');
+            if (terceroId) {
+                document.getElementById("terceroId").value = terceroId;
+                buscarFechasFND();
+            }
+        });
+
+        async function buscarFechasFND() {
+            try {
+                const terceroId = document.getElementById("terceroId").value.trim();
+                const fechaSelect = document.getElementById("fechaSelect");
+                const spinner = document.getElementById("loading-spinner");
+
+                if (!terceroId) {
+                    alert("Por favor ingrese un ID (NIT) del tercero");
+                    return;
+                }
+
+                spinner.style.display = "block";
+                fechaSelect.style.display = "none";
+                fechaSelect.innerHTML = '<option value="">Cargando fechas...</option>';
+
+                const response = await fetch(`http://localhost:8000/fechasfnd?f_tercero_id=${encodeURIComponent(terceroId)}`);
+                const data = await response.json();
+
+                if (!data.fechas || data.fechas.length === 0) {
+                    alert("No hay fechas disponibles para este ID");
+                    spinner.style.display = "none";
+                    return;
+                }
+
+                fechaSelect.innerHTML = '<option value="">Seleccione una fecha</option>';
+                data.fechas.forEach(fecha => {
+                    fechaSelect.innerHTML += `<option value="${fecha}">${fecha}</option>`;
+                });
+
+                fechaSelect.style.display = "block";
+                spinner.style.display = "none";
+            } catch (error) {
+                console.error("Error al obtener fechas:", error);
+                alert("Error al obtener las fechas disponibles");
+                document.getElementById("loading-spinner").style.display = "none";
+            }
+        }
+
+        async function loadDocumentoFND() {
+            try {
+                const documentosContainer = document.getElementById("documentos-container");
+                const statusMessage = document.getElementById("status-message");
+                const spinner = document.getElementById("loading-spinner");
+                const terceroId = document.getElementById("terceroId").value.trim();
+                const fecha = document.getElementById("fechaSelect").value.trim();
+
+                if (!terceroId || !fecha) {
+                    return;
+                }
+
+                spinner.style.display = "block";
+                statusMessage.innerHTML = "";
+                documentosContainer.innerHTML = "";
+
+                let url = `http://localhost:8000/documentosfnd?nit_tercero_docto=${encodeURIComponent(terceroId)}&fecha=${encodeURIComponent(fecha)}`;
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`Error ${response.status}: ${await response.text()}`);
+
+                const data = await response.json();
+                if (!data.documentos || data.documentos.length === 0) {
+                    statusMessage.innerHTML = "<p>No se encontraron documentos</p>";
+                    spinner.style.display = "none";
+                    return;
+                }
+
+                let totalBruto = 0;
+                let totalDescuento = 0;
+                let totalImpuesto = 0;
+                let totalNeto = 0;
+
+                let html = `
+                    <table class="details-table">
+                        <tr>
+                            <th>Servicio</th>
+                            <th>Descripción</th>
+                            <th>Cantidad</th>
+                            <th>Valor Bruto</th>
+                            <th>Valor Desctos</th>
+                            <th>Valor Impuesto</th>
+                            <th>Valor Neto</th>
+                        </tr>
+                `;
+
+                data.documentos.forEach(doc => {
+                    totalBruto += doc["Valor Bruto"];
+                    totalDescuento += doc["Valor Descuento"];
+                    totalImpuesto += doc["Valor Impuesto"];
+                    totalNeto += doc["Valor Neto"];
+
+                    html += `
+                        <tr>
+                            <td>S-DESCUE</td>
+                            <td>DESCUENTO PLAN COMERCIAL</td>
+                            <td class="right-align">1.00</td>
+                            <td class="right-align">${formatNumber(doc["Valor Bruto"])}</td>
+                            <td class="right-align">${formatNumber(doc["Valor Descuento"])}</td>
+                            <td class="right-align">${formatNumber(doc["Valor Impuesto"])}</td>
+                            <td class="right-align">${formatNumber(doc["Valor Neto"])}</td>
+                        </tr>
+                    `;
+                });
+
+                html += `</table>`;
+                documentosContainer.innerHTML = html;
+                spinner.style.display = "none";
+            } catch (error) {
+                console.error("Error al cargar documentos FND:", error);
+                statusMessage.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+                spinner.style.display = "none";
+            }
+        }
+
+        function formatNumber(value) {
+            return new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", minimumFractionDigits: 2 }).format(value);
+        }
+    </script>
+
+</body>
+</html>
