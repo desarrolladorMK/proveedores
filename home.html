@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel - Merkahorro</title>
+  <meta name="description" content="Panel de control de Merkahorro">
+  
+  <style>
+    :root {
+      --primary-900: #16094a;
+      --primary-700: #220d65;
+      --primary-500: #3a1d99;
+      --primary-100: #f0edfa;
+      --danger-600: #dc2626;
+      --danger-700: #b91c1c;
+      --gray-100: #f8f9fa;
+      --gray-200: #e9ecef;
+      --white: #ffffff;
+      --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: linear-gradient(135deg, var(--primary-100) 0%, var(--white) 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      line-height: 1.5;
+      color: var(--primary-900);
+    }
+
+    .card {
+      width: 100%;
+      max-width: 480px;
+      background: var(--white);
+      padding: 2.5rem;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(34, 13, 101, 0.15);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 8px;
+      height: 100%;
+      background: linear-gradient(to bottom, var(--primary-700), var(--primary-500));
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      margin-bottom: 2rem;
+      gap: 12px;
+    }
+
+    .brand__logo {
+      width: 48px;
+      height: 48px;
+      background: var(--primary-700);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      font-size: 20px;
+    }
+
+    .brand__name {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--primary-700);
+    }
+
+    .welcome {
+      margin-bottom: 2rem;
+    }
+
+    .welcome__title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+
+    .welcome__subtitle {
+      color: var(--primary-500);
+      font-weight: 500;
+    }
+
+    .user-id {
+      font-weight: 600;
+      color: var(--primary-700);
+    }
+
+    .menu {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .menu__item {
+      text-decoration: none;
+      color: var(--primary-700);
+      padding: 1rem 1.5rem;
+      font-size: 1rem;
+      font-weight: 500;
+      border-radius: 12px;
+      background: var(--gray-100);
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border: 1px solid var(--gray-200);
+    }
+
+    .menu__item:hover {
+      background: var(--primary-100);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(34, 13, 101, 0.1);
+    }
+
+    .menu__icon {
+      width: 24px;
+      height: 24px;
+      color: var(--primary-500);
+    }
+
+    .menu__item--danger {
+      color: white;
+      background: var(--danger-600);
+      border-color: var(--danger-700);
+    }
+
+    .menu__item--danger:hover {
+      background: var(--danger-700);
+    }
+
+    .menu__item--danger .menu__icon {
+      color: white;
+    }
+
+    .footer {
+      margin-top: 2rem;
+      text-align: center;
+      font-size: 0.875rem;
+      color: var(--primary-500);
+    }
+
+    @media (max-width: 480px) {
+      .card {
+        padding: 1.75rem;
+      }
+      
+      .brand {
+        margin-bottom: 1.5rem;
+      }
+      
+      .welcome__title {
+        font-size: 1.3rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="brand">
+      <div class="brand__logo">M</div>
+      <div class="brand__name">Merkahorro</div>
+    </div>
+    
+    <div class="welcome">
+      <h1 class="welcome__title">Bienvenido</h1>
+      <p class="welcome__subtitle">ID: <span id="user-id" class="user-id"></span></p>
+    </div>
+    
+    <nav class="menu" aria-label="Menú principal">
+      <a href="index.html" class="menu__item">
+        <svg class="menu__icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" />
+        </svg>
+        Comprobante de Egreso
+      </a>
+      <a href="FND.html" class="menu__item">
+        <svg class="menu__icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+        FND
+      </a>
+      <a href="#" onclick="logout()" class="menu__item menu__item--danger">
+        <svg class="menu__icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+        </svg>
+        Cerrar sesión
+      </a>
+    </nav>
+    
+    <div class="footer">
+      <p>© 2025 Merkahorro. Todos los derechos reservados.</p>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const id = localStorage.getItem('terceroId');
+      if (!id) {
+        window.location.href = "login.html";
+        return;
+      }
+      document.getElementById("user-id").textContent = id;
+    });
+
+    function logout() {
+      if (confirm('¿Estás seguro de que deseas cerrar sesión?')) {
+        localStorage.removeItem("terceroId");
+        window.location.href = "login.html";
+      }
+    }
+  </script>
+</body>
+</html>

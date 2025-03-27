@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Query, HTTPException
+from fastapi import FastAPI, Query
 from typing import Optional
 from fastapi.middleware.cors import CORSMiddleware
 import pyodbc
@@ -6,7 +6,7 @@ from fastapi.responses import JSONResponse
 
 app = FastAPI()
 
-# Conexión a la base de datos
+# 🔹 Conexión a SQL Server
 conn_str = (
     r'DRIVER={ODBC Driver 17 for SQL Server};'
     r'SERVER=siesa-pdn-sqlsw-db2.cw4fp6bllyds.us-east-1.rds.amazonaws.com;'
@@ -16,14 +16,19 @@ conn_str = (
     r'TrustServerCertificate=yes;'
 )
 
-# Configuración de CORS
+# 🔹 CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  
+    allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["*"],  
-    allow_headers=["*"],  
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
+
+# 🔹 Convertir resultados a lista de diccionarios
+def fetch_rows_as_dict(cursor):
+    columns = [column[0] for column in cursor.description]
+    return [dict(zip(columns, row)) for row in cursor.fetchall()]
 
 @app.get("/")
 def read_root():
@@ -36,14 +41,14 @@ def get_documentos(
     limit: int = Query(3000, description="Número máximo de registros", ge=1, le=11115)
 ):
     """
-    Endpoint para consultar comprobantes FND sin duplicados.
+    Endpoint optimizado con LEFT JOIN en vez de OUTER APPLY.
     """
     try:
         with pyodbc.connect(conn_str, timeout=10) as conn:
             cursor = conn.cursor()
 
             query = f"""
-                SELECT TOP {limit}  
+                SELECT TOP {limit}
                     t1.fecha_docto,
                     t1.tipo_docto,
                     t1.id_moneda_docto,
@@ -55,21 +60,16 @@ def get_documentos(
                     t1.vlr_imp,
                     t1.vlr_neto,
                     t1.notas,
+                    t1.nit_tercero_docto,
                     t2.f_fe_descripcion,
                     t2.f_docto_causacion,
-                    t200.f_direccion
+                    t2.f_fecha_docto_causacion
                 FROM [UnoEE_Merkahorro_Real].[dbo].[BI_T320_2] t1
-                OUTER APPLY (
-                    SELECT TOP 1 f_docto_causacion, f_fe_descripcion, f_fecha_docto_causacion
+                LEFT JOIN (
+                    SELECT f_notas, f_docto_causacion, f_fe_descripcion, f_fecha_docto_causacion,
+                           ROW_NUMBER() OVER (PARTITION BY f_notas ORDER BY f_docto_causacion DESC) AS rn
                     FROM [UnoEE_Merkahorro_Real].[dbo].[BI_T363]
-                    WHERE f_notas = t1.notas
-                    ORDER BY f_docto_causacion DESC
-                ) t2
-                OUTER APPLY (
-                    SELECT TOP 1 f_direccion
-                    FROM [UnoEE_Merkahorro_Real].[dbo].[SE_T200]
-                    WHERE f_tercero_id = t1.nit_tercero_docto
-                ) t200
+                ) t2 ON t1.notas = t2.f_notas AND t2.rn = 1
                 WHERE t2.f_docto_causacion IS NOT NULL
             """
             params = []
@@ -90,7 +90,7 @@ def get_documentos(
             if not rows:
                 return {"mensaje": "No se encontraron comprobantes para este ID y fecha"}
 
-            documentos_ordenados = [
+            documentos = [
                 {
                     "Número": row["f_docto_causacion"],
                     "Fecha": row["fecha_docto"],
@@ -104,28 +104,24 @@ def get_documentos(
                     "Valor Impuesto": row["vlr_imp"],
                     "Valor Neto": row["vlr_neto"],
                     "Notas": row["notas"],
-                    "Tipo Cliente": row["f_fe_descripcion"],
-                    "Dirección": row["f_direccion"]
+                    "Tipo Cliente": row["f_fe_descripcion"]
                 }
                 for row in rows
             ]
 
-        return {"documentos": documentos_ordenados}
+        return {"documentos": documentos}
 
-    except pyodbc.OperationalError as db_err:
-        return JSONResponse(status_code=500, content={"error": "Error de conexión a la base de datos", "detalle": str(db_err)})
     except Exception as e:
-        return JSONResponse(status_code=500, content={"error": str(e)})
+        return {"error": str(e)}
 
 @app.get("/fechasfnd")
 def get_fechas_disponibles(f_tercero_id: str = Query(..., description="ID del tercero para obtener fechas")):
     """
-    Endpoint para obtener todas las fechas disponibles para un ID de tercero.
+    Endpoint para obtener fechas FND disponibles por tercero.
     """
     try:
         with pyodbc.connect(conn_str) as conn:
             cursor = conn.cursor()
-
             query = """
                 SELECT DISTINCT CONVERT(VARCHAR, t1.f_fecha_docto_egreso, 23) AS fecha
                 FROM [UnoEE_Merkahorro_Real].[dbo].[BI_T363] t1
@@ -135,9 +131,7 @@ def get_fechas_disponibles(f_tercero_id: str = Query(..., description="ID del te
                 ORDER BY fecha DESC
             """
             cursor.execute(query, (f_tercero_id,))
-            rows = cursor.fetchall()
-
-            fechas = [row[0] for row in rows]
+            fechas = [row[0] for row in cursor.fetchall()]
 
             if not fechas:
                 return {"mensaje": "No hay fechas disponibles para este ID"}
@@ -146,7 +140,3 @@ def get_fechas_disponibles(f_tercero_id: str = Query(..., description="ID del te
 
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
-
-def fetch_rows_as_dict(cursor):
-    columns = [column[0] for column in cursor.description]
-    return [dict(zip(columns, row)) for row in cursor.fetchall()]
